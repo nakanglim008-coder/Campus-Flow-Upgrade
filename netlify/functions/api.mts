@@ -8,6 +8,8 @@ import {
 } from "../../lib/db/src/schema/index";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { users, exeatRequests } from "./_db/schema";
+
 
 type Role = "student" | "admin" | "security";
 type JwtPayload = { userId: string; role: Role; name: string };
