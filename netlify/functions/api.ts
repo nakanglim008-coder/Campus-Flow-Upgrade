@@ -2,10 +2,6 @@ import type { Context } from "@netlify/functions";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq, desc, or } from "drizzle-orm";
-import {
-  users,
-  exeatRequests,
-} from "../../lib/db/src/schema/index";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { users, exeatRequests } from "./_db/schema";
