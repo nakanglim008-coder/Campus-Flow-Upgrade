@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../lib/auth";
 import { api, type ExeatDTO } from "../../lib/api";
-import { Clock, CheckCircle2, XCircle, ClipboardCheck, LogOut, Menu, X, Users, FileText } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, ClipboardCheck, LogOut, FileText, BarChart3 } from "lucide-react";
+import Logo from "../../components/Logo";
 
 const STATUS_CONFIG = {
   pending: { label: "Pending", color: "oklch(0.78 0.16 80)", icon: Clock },
@@ -14,6 +16,9 @@ const STATUS_CONFIG = {
 
 type Filter = "all" | "pending" | "approved" | "rejected";
 
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
+const fadeUp = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
+
 export default function Admin() {
   const { user, logout } = useAuth();
   const [, nav] = useLocation();
@@ -23,7 +28,6 @@ export default function Admin() {
   const [reviewing, setReviewing] = useState<ExeatDTO | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -54,7 +58,7 @@ export default function Admin() {
   const stats = [
     { label: "Total", value: exeats.length, color: "oklch(0.62 0.18 150)" },
     { label: "Pending", value: pendingCount, color: "oklch(0.78 0.16 80)" },
-    { label: "Approved", value: exeats.filter((e) => e.status === "approved" || e.status === "departed").length, color: "oklch(0.70 0.20 150)" },
+    { label: "Approved", value: exeats.filter((e) => ["approved", "departed", "returned"].includes(e.status)).length, color: "oklch(0.70 0.20 150)" },
     { label: "Rejected", value: exeats.filter((e) => e.status === "rejected").length, color: "oklch(0.60 0.22 25)" },
   ];
 
@@ -63,61 +67,76 @@ export default function Admin() {
       {/* Topbar */}
       <header className="glass-card border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
+          <Logo size={30} />
           <span className="font-bold text-gradient">PulsePass</span>
           <span className="hidden sm:block text-xs px-2 py-0.5 rounded-full bg-[oklch(0.72_0.18_250_/_0.2)] text-[oklch(0.72_0.18_250)] font-medium">Admin</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden sm:block text-sm text-[var(--color-muted-foreground)]">{user?.name}</span>
-          <button onClick={logout} className="flex items-center gap-1.5 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] p-1.5 rounded-lg hover:bg-[var(--color-secondary)]">
+          <motion.button whileHover={{ scale: 1.05 }} onClick={logout}
+            className="flex items-center gap-1.5 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] p-1.5 rounded-lg hover:bg-[var(--color-secondary)]">
             <LogOut className="w-4 h-4" /><span className="hidden sm:inline">Logout</span>
-          </button>
+          </motion.button>
         </div>
       </header>
 
       <div className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gradient">Admin Dashboard</h1>
-          <p className="text-sm text-[var(--color-muted-foreground)] mt-1">Manage student exeat requests</p>
-        </div>
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl font-bold text-gradient flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-[oklch(0.72_0.18_250)]" />
+            Admin Dashboard
+          </h1>
+          <p className="text-sm text-[var(--color-muted-foreground)] mt-1">Review and manage student exeat requests</p>
+        </motion.div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {stats.map((s) => (
-            <div key={s.label} className="glass-card rounded-2xl p-4 text-center space-y-1">
+            <motion.div key={s.label} variants={fadeUp}
+              whileHover={{ y: -3, scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}
+              className="glass-card rounded-2xl p-4 text-center space-y-1">
               <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
               <p className="text-xs text-[var(--color-muted-foreground)]">{s.label}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Filter tabs */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {(["pending", "all", "approved", "rejected"] as Filter[]).map((f) => (
-            <button
-              key={f}
+            <motion.button key={f} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
               onClick={() => setFilter(f)}
               className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-sm font-medium transition-colors capitalize ${filter === f ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]" : "bg-[var(--color-secondary)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"}`}
             >
-              {f} {f === "pending" && pendingCount > 0 && <span className="ml-1 bg-[oklch(0.78_0.16_80_/_0.3)] text-[oklch(0.78_0.16_80)] rounded-full px-1.5 text-xs">{pendingCount}</span>}
-            </button>
+              {f} {f === "pending" && pendingCount > 0 && (
+                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  className="ml-1 bg-[oklch(0.78_0.16_80_/_0.3)] text-[oklch(0.78_0.16_80)] rounded-full px-1.5 text-xs">{pendingCount}</motion.span>
+              )}
+            </motion.button>
           ))}
         </div>
 
-        {/* Requests list */}
-        {loading && <p className="text-center py-12 text-[var(--color-muted-foreground)] text-sm">Loading…</p>}
-        {!loading && filtered.length === 0 && (
-          <div className="text-center py-12 text-[var(--color-muted-foreground)]">
-            <FileText className="w-8 h-8 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No {filter !== "all" ? filter : ""} requests</p>
+        {loading && (
+          <div className="flex justify-center py-12">
+            <div className="w-6 h-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
-        <div className="space-y-3">
+        {!loading && filtered.length === 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-14 text-[var(--color-muted-foreground)]">
+            <FileText className="w-9 h-9 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No {filter !== "all" ? filter : ""} requests</p>
+          </motion.div>
+        )}
+
+        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
           {filtered.map((e) => {
             const cfg = STATUS_CONFIG[e.status];
             const Icon = cfg.icon;
             return (
-              <div key={e.id} className="glass-card rounded-2xl p-4 space-y-3">
+              <motion.div key={e.id} variants={fadeUp}
+                whileHover={{ x: 2 }} transition={{ type: "spring", stiffness: 300 }}
+                className="glass-card rounded-2xl p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: `${cfg.color}22` }}>
@@ -133,45 +152,34 @@ export default function Admin() {
                   </span>
                 </div>
 
-                <div className="pl-13 pl-[52px] grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-[var(--color-muted-foreground)]">Destination: </span>
-                    <span className="font-medium">{e.destination}</span>
-                  </div>
-                  <div>
-                    <span className="text-[var(--color-muted-foreground)]">Type: </span>
-                    <span className="font-medium capitalize">{e.type}</span>
-                  </div>
-                  <div>
-                    <span className="text-[var(--color-muted-foreground)]">Dates: </span>
-                    <span className="font-medium">{e.departDate} → {e.returnDate}</span>
-                  </div>
-                  <div>
-                    <span className="text-[var(--color-muted-foreground)]">Code: </span>
-                    <span className="font-mono font-bold text-[var(--color-primary)]">{e.code}</span>
-                  </div>
+                <div className="pl-[52px] grid grid-cols-2 gap-2 text-xs">
+                  <div><span className="text-[var(--color-muted-foreground)]">Destination: </span><span className="font-medium">{e.destination}</span></div>
+                  <div><span className="text-[var(--color-muted-foreground)]">Type: </span><span className="font-medium capitalize">{e.type}</span></div>
+                  <div><span className="text-[var(--color-muted-foreground)]">Dates: </span><span className="font-medium">{e.departDate} → {e.returnDate}</span></div>
+                  <div><span className="text-[var(--color-muted-foreground)]">Code: </span><span className="font-mono font-bold text-[var(--color-primary)]">{e.code}</span></div>
                 </div>
 
                 <p className="text-xs text-[var(--color-muted-foreground)] pl-[52px]">{e.reason}</p>
 
                 {e.rejectReason && (
-                  <p className="text-xs text-[var(--color-destructive)] pl-[52px]">Rejection: {e.rejectReason}</p>
+                  <p className="text-xs text-[var(--color-destructive)] pl-[52px] bg-[oklch(0.6_0.22_25_/_0.08)] rounded-lg px-3 py-1.5">
+                    Rejection: {e.rejectReason}
+                  </p>
                 )}
 
                 {e.status === "pending" && (
-                  <div className="flex gap-2 pl-[52px]">
-                    <button
+                  <div className="pl-[52px]">
+                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                       onClick={() => setReviewing(e)}
-                      className="px-4 py-1.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-semibold hover:opacity-90"
-                    >
-                      Review
-                    </button>
+                      className="px-5 py-1.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-semibold hover:opacity-90 glow-border">
+                      Review Request
+                    </motion.button>
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
 
       <footer className="text-center py-3 text-xs text-[var(--color-muted-foreground)]">
@@ -179,50 +187,51 @@ export default function Admin() {
       </footer>
 
       {/* Review Modal */}
-      {reviewing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" onClick={() => setReviewing(null)}>
-          <div className="glass-card rounded-3xl p-6 w-full max-w-md space-y-5" onClick={(e) => e.stopPropagation()}>
-            <div>
-              <h2 className="text-lg font-bold">Review Request</h2>
-              <p className="text-sm text-[var(--color-muted-foreground)] mt-1">
-                {reviewing.studentName} · {reviewing.destination}
-              </p>
-            </div>
+      <AnimatePresence>
+        {reviewing && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4" onClick={() => setReviewing(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.88, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              className="glass-card rounded-3xl p-6 w-full max-w-md space-y-5" onClick={(e) => e.stopPropagation()}>
+              <div>
+                <h2 className="text-lg font-bold">Review Request</h2>
+                <p className="text-sm text-[var(--color-muted-foreground)] mt-1">
+                  <strong className="text-[var(--color-foreground)]">{reviewing.studentName}</strong> → {reviewing.destination}
+                </p>
+                <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                  <div className="glass-card rounded-lg p-2"><span className="text-[var(--color-muted-foreground)]">Type: </span><span className="font-medium capitalize">{reviewing.type}</span></div>
+                  <div className="glass-card rounded-lg p-2"><span className="text-[var(--color-muted-foreground)]">Dates: </span><span className="font-medium">{reviewing.departDate} – {reviewing.returnDate}</span></div>
+                </div>
+                <p className="text-xs text-[var(--color-muted-foreground)] mt-3 bg-[var(--color-secondary)] rounded-lg p-2">{reviewing.reason}</p>
+              </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--color-muted-foreground)]">Rejection reason (required if rejecting)</label>
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                rows={3}
-                className="input-base resize-none"
-                placeholder="Reason for rejection…"
-              />
-            </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[var(--color-muted-foreground)]">Rejection reason (required to reject)</label>
+                <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3}
+                  className="input-base resize-none" placeholder="State why this request is being rejected…" />
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleReview("approved")}
-                disabled={actionLoading}
-                className="flex-1 py-2.5 rounded-xl bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold text-sm hover:opacity-90 disabled:opacity-50"
-              >
-                ✓ Approve
+              <div className="flex gap-3">
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => handleReview("approved")} disabled={actionLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold text-sm hover:opacity-90 disabled:opacity-50 glow-border">
+                  {actionLoading ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /></span> : "✓ Approve"}
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => handleReview("rejected")} disabled={actionLoading || !rejectReason.trim()}
+                  className="flex-1 py-2.5 rounded-xl bg-[oklch(0.60_0.22_25_/_0.2)] text-[oklch(0.70_0.20_30)] font-semibold text-sm hover:opacity-90 disabled:opacity-40 border border-[oklch(0.60_0.22_25_/_0.3)]">
+                  ✕ Reject
+                </motion.button>
+              </div>
+
+              <button onClick={() => setReviewing(null)} className="w-full py-1.5 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]">
+                Cancel
               </button>
-              <button
-                onClick={() => handleReview("rejected")}
-                disabled={actionLoading || !rejectReason.trim()}
-                className="flex-1 py-2.5 rounded-xl bg-[oklch(0.60_0.22_25_/_0.25)] text-[oklch(0.60_0.22_25)] font-semibold text-sm hover:opacity-90 disabled:opacity-40"
-              >
-                ✕ Reject
-              </button>
-            </div>
-
-            <button onClick={() => setReviewing(null)} className="w-full py-2 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
