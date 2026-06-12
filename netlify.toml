@@ -1,0 +1,20 @@
+[build]
+  publish = "artifacts/pulsepass/dist"
+  command = "pnpm install && pnpm --filter @workspace/pulsepass run build"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production.environment]
+  NODE_ENV = "production"
