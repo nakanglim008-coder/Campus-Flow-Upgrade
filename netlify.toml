@@ -1,5 +1,5 @@
 [build]
-  publish = "artifacts/pulsepass/dist"
+  publish = "artifacts/pulsepass/dist/public"
   command = "pnpm install && pnpm --filter @workspace/pulsepass run build"
 
 [functions]
