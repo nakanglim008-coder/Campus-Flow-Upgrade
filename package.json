@@ -10,9 +10,13 @@
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.0"
+    "@neondatabase/serverless": "^0.10.4",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "catalog:",
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
+    "esbuild": "0.27.3",
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
   }
